@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google 試算表筆記備忘錄</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-indigo-50 via-white to-sky-50 min-h-screen py-10 px-4 sm:px-6 lg:px-8">
+
+    <div class="max-w-2xl mx-auto space-y-8">
+        
+        <!-- Main Form Card -->
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+            
+            <!-- Header -->
+            <div class="bg-indigo-600 px-6 py-6 text-white text-center relative">
+                <h1 class="text-2xl font-bold tracking-wide">筆記備忘錄</h1>
+                <p class="text-indigo-200 text-sm mt-1">資料自動同步至 Google 試算表與雲端硬碟</p>
+            </div>
+
+            <div class="p-6 sm:p-8 space-y-6">
+                
+                <!-- Apps Script Web App URL Configuration -->
+                <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-800 space-y-2">
+                    <p class="font-semibold flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        設定提示：
+                    </p>
+                    <p>請將 Google Apps Script 部署後的 Web App 網址貼入下方欄位（系統會自動幫您記憶，下次開啟不需重新輸入）。</p>
+                    <div>
+                        <label for="scriptUrl" class="block font-medium text-amber-900 mb-1">GAS Web App 網址：</label>
+                        <input type="text" id="scriptUrl" oninput="saveScriptUrl(this.value)" placeholder="https://script.google.com/macros/s/.../exec" class="w-full px-3 py-2 bg-white border border-amber-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs">
+                    </div>
+                </div>
+
+                <!-- Note Input Form -->
+                <div class="space-y-4">
+                    <!-- Category Selector -->
+                    <div>
+                        <label for="noteCategory" class="block text-sm font-semibold text-gray-700 mb-1">筆記分類：</label>
+                        <select id="noteCategory" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-800 bg-white transition">
+                            <option value="工作">💼 工作 (Work)</option>
+                            <option value="生活">🏠 生活 (Life)</option>
+                            <option value="靈感">💡 靈感 (Idea)</option>
+                            <option value="學習">📚 學習 (Study)</option>
+                            <option value="其他">📌 其他 (Other)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="noteContent" class="block text-sm font-semibold text-gray-700 mb-1">筆記內容：</label>
+                        <textarea id="noteContent" rows="4" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-gray-800 placeholder-gray-400 resize-none transition" placeholder="寫下您的隨手靈感或備忘事項..."></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">上傳照片或檔案：</label>
+                        <div class="flex items-center justify-center w-full">
+                            <label for="fileInput" class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-xl cursor-pointer bg-gray-50 hover:bg-gray-100 transition">
+                                <div class="flex flex-col items-center justify-center pt-5 pb-6 px-4 text-center">
+                                    <svg class="w-8 h-8 mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3-3m3-3v12"></path></svg>
+                                    <p class="text-sm text-gray-600 font-medium" id="fileNameDisplay">點擊或拖曳檔案至此上傳</p>
+                                    <p class="text-xs text-gray-400 mt-1">支援圖片、文件等各式檔案</p>
+                                </div>
+                                <input type="file" id="fileInput" class="hidden" onchange="handleFileSelect(this)" />
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Button -->
+                <button onclick="submitNote()" id="submitBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-semibold py-3.5 px-6 rounded-xl shadow-lg shadow-indigo-200 transition duration-200 flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                    儲存至 Google 試算表與雲端硬碟
+                </button>
+
+                <!-- Status Message Box -->
+                <div id="statusBox" class="hidden rounded-xl p-4 text-sm font-medium text-center transition-all"></div>
+            </div>
+        </div>
+
+        <!-- History Stream Section -->
+        <div class="bg-white rounded-2xl shadow-xl p-6 sm:p-8 border border-gray-100 space-y-4">
+            <div class="flex flex-col sm:flex-row items-center justify-between border-b pb-4 gap-3">
+                <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                    所有筆記紀錄清單
+                </h2>
+                <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                    <select id="filterCategory" onchange="renderHistory()" class="px-3 py-1.5 border border-gray-300 rounded-lg text-xs bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="全部">全部分類</option>
+                        <option value="工作">💼 工作</option>
+                        <option value="生活">🏠 生活</option>
+                        <option value="靈感">💡 靈感</option>
+                        <option value="學習">📚 學習</option>
+                        <option value="其他">📌 其他</option>
+                    </select>
+                    <button onclick="fetchAllNotes()" id="refreshBtn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold px-3 py-1.5 rounded-lg transition flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        同步載入
+                    </button>
+                    <span id="noteCountBadge" class="bg-indigo-100 text-indigo-700 text-xs font-semibold px-2.5 py-1 rounded-full">0 筆</span>
+                </div>
+            </div>
+            
+            <div id="historyList" class="space-y-3">
+                <div id="emptyHistory" class="text-center py-8 text-gray-400 text-sm">
+                    尚無紀錄，請點擊上方「同步載入」按鈕讀取 Google 試算表中的所有筆記。
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let allNotes = [];
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedUrl = localStorage.getItem('gas_script_url');
+            if (savedUrl) {
+                document.getElementById('scriptUrl').value = savedUrl;
+            }
+        });
+
+        function saveScriptUrl(url) {
+            localStorage.setItem('gas_script_url', url.trim());
+        }
+
+        function handleFileSelect(input) {
+            const display = document.getElementById('fileNameDisplay');
+            if (input.files && input.files.length > 0) {
+                display.innerText = `已選擇：${input.files[0].name}`;
+                display.classList.add('text-indigo-600', 'font-bold');
+            } else {
+                display.innerText = '點擊或拖曳檔案至此上傳';
+                display.classList.remove('text-indigo-600', 'font-bold');
+            }
+        }
+
+        async function submitNote() {
+            const category = document.getElementById('noteCategory').value;
+            const content = document.getElementById('noteContent').value.trim();
+            const fileInput = document.getElementById('fileInput');
+            const scriptUrlInput = document.getElementById('scriptUrl').value.trim();
+            const submitBtn = document.getElementById('submitBtn');
+
+            if (!scriptUrlInput) {
+                showStatus('error', '請先填入您的 Google Apps Script 網頁應用程式網址！');
+                return;
+            }
+
+            // 確保每次送出時同步儲存至 localStorage
+            saveScriptUrl(scriptUrlInput);
+
+            if (!content && fileInput.files.length === 0) {
+                showStatus('error', '請至少輸入筆記內容或選擇一個檔案！');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `
+                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                資料處理與上傳中...
+            `;
+            showStatus('info', '正在上傳，請稍候...');
+
+            let fileData = null;
+            let fileName = null;
+            let mimeType = null;
+
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                fileName = file.name;
+                mimeType = file.type;
+                try {
+                    fileData = await toBase64(file);
+                } catch (error) {
+                    showStatus('error', '檔案讀取失敗，請重新選擇檔案。');
+                    resetButton();
+                    return;
+                }
+            }
+
+            const now = new Date();
+            const timestamp = now.getFullYear() + '-' + 
+                              String(now.getMonth() + 1).padStart(2, '0') + '-' + 
+                              String(now.getDate()).padStart(2, '0') + ' ' + 
+                              String(now.getHours()).padStart(2, '0') + ':' + 
+                              String(now.getMinutes()).padStart(2, '0') + ':' + 
+                              String(now.getSeconds()).padStart(2, '0');
+
+            const payload = {
+                action: 'add',
+                timestamp: timestamp,
+                category: category,
+                content: content,
+                fileName: fileName,
+                mimeType: mimeType,
+                fileData: fileData
+            };
+
+            try {
+                const response = await fetch(scriptUrlInput, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                if (result.status === 'success') {
+                    showStatus('success', '筆記與檔案已成功儲存至 Google 試算表與雲端硬碟！');
+                    
+                    document.getElementById('noteContent').value = '';
+                    fileInput.value = '';
+                    document.getElementById('fileNameDisplay').innerText = '點擊或拖曳檔案至此上傳';
+                    document.getElementById('fileNameDisplay').classList.remove('text-indigo-600', 'font-bold');
+
+                    fetchAllNotes(false);
+                } else {
+                    throw new Error(result.message || '伺服器回傳錯誤');
+                }
+            } catch (error) {
+                showStatus('error', '儲存失敗：' + error.message);
+            } finally {
+                resetButton();
+            }
+        }
+
+        async function fetchAllNotes(showAlert = true) {
+            const scriptUrlInput = document.getElementById('scriptUrl').value.trim();
+            if (!scriptUrlInput) {
+                if (showAlert) showStatus('error', '請先填入您的 Google Apps Script 網頁應用程式網址！');
+                return;
+            }
+
+            const refreshBtn = document.getElementById('refreshBtn');
+            if (showAlert) {
+                refreshBtn.disabled = true;
+                refreshBtn.innerHTML = `<svg class="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> 讀取中...`;
+            }
+
+            try {
+                const response = await fetch(scriptUrlInput, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'getAll' })
+                });
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    allNotes = result.data || [];
+                    renderHistory();
+                    if (showAlert) showStatus('success', `成功同步載入 ${allNotes.length} 筆紀錄！`);
+                } else {
+                    throw new Error(result.message || '讀取失敗');
+                }
+            } catch (error) {
+                if (showAlert) showStatus('error', '同步失敗：' + error.message);
+            } finally {
+                if (showAlert) {
+                    refreshBtn.disabled = false;
+                    refreshBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg> 同步載入`;
+                }
+            }
+        }
+
+        function renderHistory() {
+            const historyList = document.getElementById('historyList');
+            const badge = document.getElementById('noteCountBadge');
+            const selectedCategory = document.getElementById('filterCategory').value;
+
+            const filteredNotes = selectedCategory === 'All' || selectedCategory === '全部' 
+                ? allNotes 
+                : allNotes.filter(item => item.category === selectedCategory);
+
+            badge.innerText = `${filteredNotes.length} 筆`;
+
+            if (filteredNotes.length === 0) {
+                historyList.innerHTML = `<div id="emptyHistory" class="text-center py-8 text-gray-400 text-sm">尚無相關紀錄。您可以點擊「同步載入」從試算表讀取資料。</div>`;
+                return;
+            }
+
+            let html = '';
+            filteredNotes.forEach((item) => {
+                const badgeColor = 
+                    item.category === '工作' ? 'bg-blue-100 text-blue-700' :
+                    item.category === '生活' ? 'bg-emerald-100 text-emerald-700' :
+                    item.category === '靈感' ? 'bg-amber-100 text-amber-700' :
+                    item.category === '學習' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700';
+
+                html += `
+                    <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 transition hover:shadow-md space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full ${badgeColor}">${item.category || '未分類'}</span>
+                            <span class="text-xs text-gray-400">${item.timestamp}</span>
+                        </div>
+                        <p class="text-gray-800 text-sm whitespace-pre-wrap">${item.content || '(無文字內容)'}</p>
+                        ${item.fileName && item.fileName !== '無' ? `
+                            <div class="flex items-center gap-1.5 text-xs text-indigo-600 pt-1 border-t border-gray-200/60">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg>
+                                <span class="font-medium truncate max-w-xs">附件：${item.fileName}</span>
+                                ${item.fileUrl && item.fileUrl !== '無' && item.fileUrl !== '#' ? `<a href="${item.fileUrl}" target="_blank" class="ml-auto underline hover:text-indigo-800 font-semibold">檢視雲端檔案</a>` : ''}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            });
+            historyList.innerHTML = html;
+        }
+
+        function toBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        function showStatus(type, message) {
+            const statusBox = document.getElementById('statusBox');
+            statusBox.classList.remove('hidden', 'bg-emerald-50', 'text-emerald-800', 'border', 'border-emerald-200', 'bg-rose-50', 'text-rose-800', 'border-rose-200', 'bg-sky-50', 'text-sky-800', 'border-sky-200');
+            
+            if (type === 'success') {
+                statusBox.classList.add('bg-emerald-50', 'text-emerald-800', 'border', 'border-emerald-200');
+            } else if (type === 'error') {
+                statusBox.classList.add('bg-rose-50', 'text-rose-800', 'border', 'border-rose-200');
+            } else {
+                statusBox.classList.add('bg-sky-50', 'text-sky-800', 'border', 'border-sky-200');
+            }
+            statusBox.innerText = message;
+        }
+
+        function resetButton() {
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = `
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                儲存至 Google 試算表與雲端硬碟
+            `;
+        }
+    </script>
+</body>
+</html>
